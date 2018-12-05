@@ -3,21 +3,35 @@ package com.tlf.jenkinslab.controller;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import java.io.File;
-import java.io.IOException;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.ResourceLoader;
+
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public class GitlabController {
@@ -31,6 +45,12 @@ public class GitlabController {
     private String projectName;
     private String ownerName;
     private String configXMLString;
+
+    @Autowired
+    private ResourceLoader resourceLoader;
+
+    @Autowired
+    private ApplicationContext context;
 
 
     @PostMapping("/newJob")
@@ -48,7 +68,7 @@ public class GitlabController {
         if(eventName.equals(PROJECT_CREATE)) {
             System.out.println("Project created on: " + retMap.get("path_with_namespace"));
             System.out.println("Will create Jenkins job name: "+jobName);
-            xmlConfigCreator();
+            xmlConfigCreator(projectName, ownerName);
             createJob();
         }
 
@@ -58,30 +78,19 @@ public class GitlabController {
     }
 
     @GetMapping("/test")
-    public String xmlConfigCreator() throws Exception{
+    public String xmlConfigCreator(String projectName, String ownerName) throws Exception{
 
-            StringBuilder result = new StringBuilder("");
+        Resource resource = context.getResource("classpath:jenkinsjob.xml");
 
-            ClassLoader classLoader = getClass().getClassLoader();
-            File file = new File(classLoader.getResource("jenkinsjob.xml").getFile());
+        String file = new BufferedReader(new InputStreamReader(resource.getInputStream()))
+                .lines().collect(Collectors.joining("\n"));
 
-            try (Scanner scanner = new Scanner(file)) {
+        System.out.print(this.ownerName);
 
-                while (scanner.hasNextLine()) {
-                    String line = scanner.nextLine();
-                    result.append(line).append("\n");
-                }
-
-                scanner.close();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            configXMLString = result.toString()
+        configXMLString = file
                     .replace("HOST", gitlabHost)
-                    .replace("PATH", ownerName)
-                    .replace("JOB", projectName);
+                    .replace("PATH", this.ownerName)
+                    .replace("JOB", this.projectName);
 
         return  configXMLString;
     }
