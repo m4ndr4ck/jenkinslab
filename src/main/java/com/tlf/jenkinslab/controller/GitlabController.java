@@ -54,10 +54,12 @@ public class GitlabController {
 
 
     @PostMapping("/newJob")
-    public void newJob(@RequestBody String test) throws Exception{
+    public void newJob(@RequestBody String gitLabHook) throws Exception{
+
+        System.out.println(gitLabHook);
 
         Map<String, Object> retMap = new Gson().fromJson(
-                test, new TypeToken<HashMap<String, Object>>() {}.getType()
+                gitLabHook, new TypeToken<HashMap<String, Object>>() {}.getType()
         );
 
         String eventName = (String)retMap.get("event_name");
