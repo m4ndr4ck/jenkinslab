@@ -107,7 +107,7 @@ public class GitlabController {
         headers.add("Authorization", "Basic " + base64Creds);
         HttpEntity<String> request = new HttpEntity<String>(configXMLString, headers);
 
-        final ResponseEntity<String> response = restTemplate.postForEntity("http://129.213.136.120:8080/job/m4ndr4ck/createItem?name="+projectName+"-"+ownerName, request, String.class);
+        final ResponseEntity<String> response = restTemplate.postForEntity("http://129.213.136.120:8080/job/OSS/createItem?name="+projectName+"-"+ownerName, request, String.class);
 
     }
 
