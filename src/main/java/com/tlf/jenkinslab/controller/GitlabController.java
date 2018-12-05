@@ -38,6 +38,7 @@ public class GitlabController {
 
     String PROJECT_CREATE = "project_create";
     String PROJECT_DESTROY = "project_destroy";
+    String MERGE_REQUEST = "merge_request";
 
     @Value( "${gitlab.host}" )
     private String gitlabHost;
@@ -63,19 +64,27 @@ public class GitlabController {
         );
 
         String eventName = (String)retMap.get("event_name");
-        projectName = (String)retMap.get("name");
-        ownerName = (String)retMap.get("owner_name");
-        String jobName = projectName+"-"+ownerName;
+        String eventType = (String)retMap.get("event_type");
 
-        if(eventName.equals(PROJECT_CREATE)) {
-            System.out.println("Project created on: " + retMap.get("path_with_namespace"));
-            System.out.println("Will create Jenkins job name: "+jobName);
-            xmlConfigCreator(projectName, ownerName);
-            createJob();
+        if(eventName!=null) {
+            if (eventName.equals(PROJECT_CREATE)) {
+                projectName = (String) retMap.get("name");
+                ownerName = (String) retMap.get("owner_name");
+                String jobName = projectName + "-" + ownerName;
+
+                System.out.println("Project created on: " + retMap.get("path_with_namespace"));
+                System.out.println("Will create Jenkins job name: " + jobName);
+                xmlConfigCreator(projectName, ownerName);
+                createJob();
+            }
+
+            if (eventName.equals(PROJECT_DESTROY))
+                System.out.println("Project destroyed on: " + retMap.get("path_with_namespace"));
+        } else if (eventType!=null) {
+            if (eventType.equals(MERGE_REQUEST))
+                System.out.println("Merge request event");
+            System.out.print(retMap.get("changes"));
         }
-
-        if(eventName.equals(PROJECT_DESTROY))
-            System.out.println("Project destroyed on: "+retMap.get("path_with_namespace"));
 
     }
 
