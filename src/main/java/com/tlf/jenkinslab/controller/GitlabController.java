@@ -97,7 +97,7 @@ public class GitlabController {
         //Add the message converters to the restTemplate
         restTemplate.setMessageConverters(messageConverters);
 
-        String plainCreds = "m4ndr4ck:11aa635b1aad1848087ba61812fb9b2b97";
+        String plainCreds = "m4ndr4ck:1146b6d0b05b7c0e0f584f253550639365";
         byte[] plainCredsBytes = plainCreds.getBytes();
         byte[] base64CredsBytes = Base64.encodeBase64(plainCredsBytes);
         String base64Creds = new String(base64CredsBytes);
@@ -107,7 +107,7 @@ public class GitlabController {
         headers.add("Authorization", "Basic " + base64Creds);
         HttpEntity<String> request = new HttpEntity<String>(configXMLString, headers);
 
-        final ResponseEntity<String> response = restTemplate.postForEntity("http://localhost:8080/job/m4ndr4ck/createItem?name="+projectName+"-"+ownerName, request, String.class);
+        final ResponseEntity<String> response = restTemplate.postForEntity("http://129.213.136.120:8080/job/m4ndr4ck/createItem?name="+projectName+"-"+ownerName, request, String.class);
 
     }
 
