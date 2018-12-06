@@ -16,8 +16,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -81,11 +87,11 @@ public class GitlabController {
             gson.toJson(retMap.get("changes"));
 
             JsonParser jp = new JsonParser();
-            String state = jp.parse(gitLabHook.toString()).getAsJsonObject().get("changes").getAsJsonObject().get("state").getAsJsonObject().get("current").toString();
+            JsonElement state = jp.parse(gitLabHook.toString()).getAsJsonObject().get("changes").getAsJsonObject().get("state").getAsJsonObject().get("current");
             String commitSHA = jp.parse(gitLabHook.toString()).getAsJsonObject().get("object_attributes").getAsJsonObject().get("merge_commit_sha").toString();
 
             if(state != null && commitSHA !=null){
-                if(state.equals("merged"));
+                if(state.toString().equals("merged"));
                 startReleaseJob(commitSHA);
             }
 
@@ -139,10 +145,34 @@ public class GitlabController {
     public void startReleaseJob(String commitSHA) throws Exception{
         System.out.println("Will start new release job with commit SHA: "+commitSHA);
 
+        RestTemplate restTemplate =  new RestTemplate();
+        //Create a list for the message converters
+        List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
+        //Add the String Message converter
+        messageConverters.add(new FormHttpMessageConverter());
+        //Add the message converters to the restTemplate
+        restTemplate.setMessageConverters(messageConverters);
+
+        String plainCreds = "m4ndr4ck:1146b6d0b05b7c0e0f584f253550639365";
+        byte[] plainCredsBytes = plainCreds.getBytes();
+        byte[] base64CredsBytes = Base64.encodeBase64(plainCredsBytes);
+        String base64Creds = new String(base64CredsBytes);
+
+        MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
+        map.add("COMMITID", commitSHA);
+
+        HttpHeaders headers = new HttpHeaders();
+        //headers.setContentType(new MediaType("application", "application/xml"));
+        headers.add("Authorization", "Basic " + base64Creds);
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+
+        final ResponseEntity<String> response = restTemplate.postForEntity("http://129.213.136.120:8080/job/OSS/job/oss-sample-release/buildWithParameters", request, String.class);
+
+
     }
 
     public static void main (String... args) throws Exception{
-        new GitlabController().createJob();
+        new GitlabController().startReleaseJob("a16cdd9c20194788112f51ee4f9703ac77fbaf10");
     }
 
 
